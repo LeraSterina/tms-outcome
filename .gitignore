@@ -2,3 +2,4 @@
 __pycache__/
 *.pyc
 tms_data.csv
+.DS_Store
