@@ -4,18 +4,20 @@ import math
 
 st.set_page_config(page_title="TMS Outcome Predictors", page_icon="🧠", layout="centered")
 
-# --------- header ---------
+# ===== Header =====
 col1, col2 = st.columns([1,4])
 with col1:
     st.image("logo.png", width=110)
 with col2:
     st.title("TMS Outcome Predictors (Tx35)")
-    st.caption("Pick the interim (Tx9/19/29), then enter age, sex, baseline QIDS (Session 1), and percent change at that interim to estimate response probability and predicted final % improvement at Tx35, with 95% CIs.")
+    st.caption(
+        "This app uses **separate models** for each interim (Tx9, Tx19, Tx29). "
+        "Choose an interim first—your results reflect **only** the inputs for that interim."
+    )
 
 st.divider()
 
-# --------- constants (from your TMS_Calculator_95CI.xlsx) ---------
-# Order determines the X vector used for each model
+# ===== Constants (unchanged) =====
 CI_PARAMS = {
     "Tx9 Binomial": {
         "order": ["(Intercept)", "pct_change_s2", "session_1", "basis24_demo_age", "sex"],
@@ -82,20 +84,18 @@ CI_PARAMS = {
     },
 }
 
-# --------- helpers ---------
+# ===== Helpers =====
 def logistic(x):
     try:
         return 1.0 / (1.0 + math.exp(-x))
     except OverflowError:
         return 0.0 if x < 0 else 1.0
 
-def clamp_prop(v):
-    return max(min(v, 1.0), -1.0)
+def clamp_prop(v):  # keep within [-1, 1] for robustness
+    return max(min(float(v), 1.0), -1.0)
 
 def linpred_and_se(x_vec, beta, cov):
-    # x_vec, beta as lists; cov as square matrix
     z = sum(x*b for x, b in zip(x_vec, beta))
-    # variance = x' Σ x
     var = 0.0
     k = len(x_vec)
     for i in range(k):
@@ -107,72 +107,82 @@ def linpred_and_se(x_vec, beta, cov):
 def ci_logistic_prob(x_vec, model_key):
     pars = CI_PARAMS[model_key]
     z, se = linpred_and_se(x_vec, pars["beta"], pars["cov"])
-    lo = logistic(z - 1.96*se)
-    hi = logistic(z + 1.96*se)
-    p  = logistic(z)
-    return p, lo, hi
+    return logistic(z), logistic(z - 1.96*se), logistic(z + 1.96*se)
 
 def ci_gaussian_prop(x_vec, model_key):
     pars = CI_PARAMS[model_key]
     y, se = linpred_and_se(x_vec, pars["beta"], pars["cov"])
-    lo = clamp_prop(y - 1.96*se)
-    hi = clamp_prop(y + 1.96*se)
-    y  = clamp_prop(y)
-    return y, lo, hi
+    return clamp_prop(y), clamp_prop(y - 1.96*se), clamp_prop(y + 1.96*se)
 
-def fmt_pct(x): return f"{round(100*clamp_prop(x),1)}%"
-def fmt_prob(p): return f"{round(100*clamp_prop(p),0):.0f}%"
-def fmt_ci(lo, hi, pct=True):
-    if pct:
-        return f"{round(100*lo,1)}% – {round(100*hi,1)}%"
-    else:
-        return f"{round(100*lo,1)}% – {round(100*hi,1)}%"
+# ===== Sidebar: How inputs are interpreted =====
+with st.sidebar:
+    st.markdown("### How this works")
+    st.markdown(
+        "- **Pick one interim** (Tx9/19/29). The app runs that interim’s model only.\n"
+        "- **Common inputs** (age, sex, baseline QIDS at Session 1) are shared across models, "
+        "but **percent change** must correspond to the **selected interim**.\n"
+        "- Outputs are **not aggregated** across interims."
+    )
 
-# --------- choose interval FIRST (required) ---------
+# ===== Step 1: Choose Interim (required) =====
 st.subheader("Step 1 — Choose the interim")
 interval = st.selectbox(
-    "Which interim are you entering percent change for?",
+    "Select the treatment interim you are entering percent change for:",
     ["— Select —", "Tx9", "Tx19", "Tx29"],
-    index=0
+    index=0,
+    help="This choice controls which model runs. Other interims are ignored."
 )
 
 if interval == "— Select —":
-    st.info("Select Tx9, Tx19, or Tx29 to proceed.")
+    st.info("Select Tx9, Tx19, or Tx29 to proceed. The app will only use the model for the interim you choose.")
     st.stop()
 
-# --------- inputs ---------
-st.subheader("Step 2 — Inputs")
+# ===== Step 2: Baseline / Demographics =====
+st.subheader("Step 2 — Baseline & demographics")
 c1, c2 = st.columns(2)
 with c1:
     age = st.number_input("Age (years)", min_value=12, max_value=100, value=35, step=1)
-    s1  = st.number_input("Baseline QIDS total at Session 1 (≥6)", min_value=0, max_value=30, value=18, step=1)
+    s1  = st.number_input("Baseline QIDS total at Session 1", min_value=0, max_value=30, value=18, step=1,
+                          help="Baseline depressive symptom severity at Session 1.")
 with c2:
-    sex_label = st.selectbox("Sex (model coding)", ["Female (0)", "Male (1)"])
+    sex_label = st.selectbox("Sex (model coding)", ["Female (0)", "Male (1)"],
+                             help="Model uses 0=female, 1=male.")
     sex = 0 if sex_label.startswith("Female") else 1
-    st.caption("Sex coded as 0=female, 1=male for the models.")
 
-st.markdown("**Percent change at the selected interim** (proportion; e.g., 0.20 for 20%).")
+# ===== Step 3: Percent change for the selected interim =====
+st.subheader("Step 3 — Percent change at the selected interim")
+st.markdown(
+    "**Enter the percent change for the selected interim**.\n\n"
+    "- You can enter as a **proportion** (e.g., `0.20` for 20%) or a **percent** (e.g., `20`).\n"
+    "- Negative values are allowed for worsening (e.g., `-0.10` or `-10`)."
+)
+
 pct_default = 0.40
 if interval == "Tx9":
-    pct = st.number_input("Tx9 Δ% (prop)", value=pct_default, format="%.3f")
+    pct = st.number_input("Tx9 change (prop or %)", value=pct_default, format="%.3f")
     pct_var = "pct_change_s2"
     bin_key = "Tx9 Binomial"
     gau_key = "Tx9 Gaussian"
 elif interval == "Tx19":
-    pct = st.number_input("Tx19 Δ% (prop)", value=pct_default, format="%.3f")
+    pct = st.number_input("Tx19 change (prop or %)", value=pct_default, format="%.3f")
     pct_var = "pct_change_s3"
     bin_key = "Tx19 Binomial"
     gau_key = "Tx19 Gaussian"
 else:
-    pct = st.number_input("Tx29 Δ% (prop)", value=pct_default, format="%.3f")
+    pct = st.number_input("Tx29 change (prop or %)", value=pct_default, format="%.3f")
     pct_var = "pct_change_s4"
     bin_key = "Tx29 Binomial"
     gau_key = "Tx29 Gaussian"
 
+# Accept either 0–1 proportion or 0–100 percent
+pct = float(pct)
+if abs(pct) > 1.0:
+    pct = pct / 100.0
+pct = clamp_prop(pct)
+
 st.divider()
 
-# --------- compute (point + 95% CI) ---------
-# Build X vectors in each model's param order
+# ===== Build X vectors & compute =====
 def x_vector(model_key, pct, s1, age, sex):
     order = CI_PARAMS[model_key]["order"]
     mapping = {
@@ -187,11 +197,12 @@ def x_vector(model_key, pct, s1, age, sex):
     return [mapping[name] for name in order]
 
 x_bin = x_vector(bin_key, pct, s1, age, sex)
-x_gau = x_vector(gau_key, pct, s1, age, sex)  # (Gaussian models have no 'sex' term)
+x_gau = x_vector(gau_key, pct, s1, age, sex)
 
 p, plo, phi = ci_logistic_prob(x_bin, bin_key)
 g, glo, ghi = ci_gaussian_prop(x_gau, gau_key)
 
+# ===== Results tables =====
 prob_df = pd.DataFrame([{
     "Model": f"{interval} Binomial – Response probability",
     "Probability (0–1)": round(p, 6),
@@ -208,19 +219,19 @@ gauss_df = pd.DataFrame([{
     "95% CI (%)": f"{round(100*glo,1)}% – {round(100*ghi,1)}%",
 }])
 
-st.subheader(f"Response probability @ Tx35 ({interval} model)")
+st.subheader(f"Response probability @ Tx35 ({interval} model only)")
 st.dataframe(prob_df, use_container_width=True, hide_index=True)
 
-st.subheader(f"Predicted final % improvement @ Tx35 ({interval} model)")
+st.subheader(f"Predicted final % improvement @ Tx35 ({interval} model only)")
 st.dataframe(gauss_df, use_container_width=True, hide_index=True)
 
-# --------- export ---------
+# ===== Export =====
 inputs_table = pd.DataFrame([
-    ["Interim", interval],
+    ["Interim (model)", interval],
     ["Age (years)", age],
     ["Sex (0=female,1=male)", sex],
     ["Baseline QIDS total at Session 1", s1],
-    [f"{interval} Δ% (prop)", pct],
+    [f"{interval} change (proportion)", pct],
 ], columns=["Parameter", "Value"])
 
 export_df = pd.concat([prob_df, gauss_df], ignore_index=True)
@@ -234,22 +245,28 @@ csv.append(export_df.to_csv(index=False))
 csv_bytes = ("\n".join(csv)).encode("utf-8")
 
 st.download_button(
-    label="📥 Download CSV (includes Inputs + Results with 95% CIs)",
+    label="📥 Download CSV (Inputs + Results, with 95% CIs)",
     data=csv_bytes,
     file_name=f"tms_outcome_results_{interval}.csv",
     mime="text/csv",
 )
 
-# --------- highlights ---------
-st.markdown("### Highlights")
+# ===== Highlights =====
 a, b = st.columns(2)
 with a:
-    st.metric(f"{interval} response prob.",
-              f"{round(100*p):.0f}%",
-              help=f"95% CI: {round(100*plo,1)}% – {round(100*phi,1)}%")
+    st.metric(
+        f"{interval} response prob.",
+        f"{round(100*p):.0f}%",
+        help=f"95% CI: {round(100*plo,1)}% – {round(100*phi,1)}%"
+    )
 with b:
-    st.metric(f"{interval} predicted final %",
-              f"{round(100*g,1)}%",
-              help=f"95% CI: {round(100*glo,1)}% – {round(100*ghi,1)}%")
+    st.metric(
+        f"{interval} predicted final %",
+        f"{round(100*g,1)}%",
+        help=f"95% CI: {round(100*glo,1)}% – {round(100*ghi,1)}%"
+    )
 
-st.caption("CIs computed on the linear predictor using the model variance–covariance matrix (delta method). Binomial CIs are transformed via inverse logit to the probability scale.")
+st.caption(
+    "Each interim has its **own** fitted model; results are **not aggregated**. "
+    "CIs use the model variance–covariance matrix (delta method). Binomial CIs are mapped to probability via the inverse logit."
+)
