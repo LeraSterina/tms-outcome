@@ -11,15 +11,15 @@ with col1:
 with col2:
     st.title("TMS Outcome Predictors (Tx35)")
     st.caption(
-        "This app uses **separate models** for each interim (Tx9, Tx19, Tx29). "
-        "Choose an interim first—your results reflect **only** the inputs for that interim."
+        "This app uses **separate models** for each milestone (Treatment 10/20/30). "
+        "Choose a milestone first—your results reflect **only** the inputs for that milestone."
     )
 
 st.divider()
 
 # ===== Constants (unchanged) =====
 CI_PARAMS = {
-    "Tx9 Binomial": {
+    "Predicted Probability of Response From Progress at Treatment 10": {
         "order": ["(Intercept)", "pct_change_s2", "session_1", "basis24_demo_age", "sex"],
         "beta":  [-1.285726, 2.284841, -0.011642, 0.012988, -0.406301],
         "cov": [
@@ -30,7 +30,7 @@ CI_PARAMS = {
             [-0.015825,  0.002740, -0.000031, -0.000005,  0.013574],
         ],
     },
-    "Tx19 Binomial": {
+    "Predicted Probability of Response From Progress at Treatment 20": {
         "order": ["(Intercept)", "pct_change_s3", "session_1", "basis24_demo_age", "sex"],
         "beta":  [-1.838541, 3.910043, -0.021340, 0.014683, -0.727389],
         "cov": [
@@ -41,7 +41,7 @@ CI_PARAMS = {
             [-0.029540,  0.005733, -0.000076, -0.000010,  0.024228],
         ],
     },
-    "Tx29 Binomial": {
+    "Predicted Probability of Response From Progress at Treatment 30": {
         "order": ["(Intercept)", "pct_change_s4", "session_1", "basis24_demo_age", "sex"],
         "beta":  [-3.105403, 4.010878, -0.001933, 0.013706, -0.433236],
         "cov": [
@@ -52,7 +52,7 @@ CI_PARAMS = {
             [-0.036743, -0.004979, -0.000972,  0.000090,  0.030805],
         ],
     },
-    "Tx9 Gaussian": {
+    "Predicted Percent Change in QIDS From Progress at Treatment 10": {
         "order": ["(Intercept)", "pct_change_s2", "session_1", "basis24_demo_age"],
         "beta":  [0.094591, 0.461364, 0.004714, 0.002096],
         "cov": [
@@ -62,7 +62,7 @@ CI_PARAMS = {
             [-0.000011, -0.000013,  0.000000,  0.000001],
         ],
     },
-    "Tx19 Gaussian": {
+    "Predicted Percent Change in QIDS From Progress at Treatment 20": {
         "order": ["(Intercept)", "pct_change_s3", "session_1", "basis24_demo_age"],
         "beta":  [0.058819, 0.614008, 0.003700, 0.001321],
         "cov": [
@@ -72,7 +72,7 @@ CI_PARAMS = {
             [-0.000014, -0.000011,  0.000000,  0.000001],
         ],
     },
-    "Tx29 Gaussian": {
+    "Predicted Percent Change in QIDS From Progress at Treatment 30": {
         "order": ["(Intercept)", "pct_change_s4", "session_1", "basis24_demo_age"],
         "beta":  [0.041973, 0.775197, 0.001496, 0.000547],
         "cov": [
@@ -118,23 +118,23 @@ def ci_gaussian_prop(x_vec, model_key):
 with st.sidebar:
     st.markdown("### How this works")
     st.markdown(
-        "- **Pick one interim** (Tx9/19/29). The app runs that interim’s model only.\n"
+        "- **Pick one milestone** (Treatment 10/20/30). The app runs that interim’s model only.\n"
         "- **Common inputs** (age, sex, baseline QIDS at Session 1) are shared across models, "
-        "but **percent change** must correspond to the **selected interim**.\n"
-        "- Outputs are **not aggregated** across interims."
+        "but **percent change** must correspond to the **selected milestone**.\n"
+        "- Outputs are **not aggregated** across milestones."
     )
 
 # ===== Step 1: Choose Interim (required) =====
 st.subheader("Step 1 — Choose the interim")
 interval = st.selectbox(
-    "Select the treatment interim you are entering percent change for:",
-    ["— Select —", "Tx9", "Tx19", "Tx29"],
+    "Select the treatment milestone you are entering percent change for:",
+    ["— Select —", "Treatment 10", "Treatment 20", "Treatment 30"],
     index=0,
-    help="This choice controls which model runs. Other interims are ignored."
+    help="This choice controls which model runs. Other milestones are ignored."
 )
 
 if interval == "— Select —":
-    st.info("Select Tx9, Tx19, or Tx29 to proceed. The app will only use the model for the interim you choose.")
+    st.info("Select Treatment 10, Treatment 20, or Treatment 30 to proceed. The app will only use the model for the milestone you choose.")
     st.stop()
 
 # ===== Step 2: Baseline / Demographics =====
@@ -150,15 +150,15 @@ with c2:
     sex = 0 if sex_label.startswith("Female") else 1
 
 # ===== Step 3: Percent change for the selected interim =====
-st.subheader("Step 3 — Percent change at the selected interim")
+st.subheader("Step 3 — Percent change at the selected milestone")
 st.markdown(
-    "**Enter the percent change for the selected interim**.\n\n"
+    "**Enter the percent change at the selected milestone**.\n\n"
     "- You can enter as a **proportion** (e.g., `0.20` for 20%) or a **percent** (e.g., `20`).\n"
     "- Negative values are allowed for worsening (e.g., `-0.10` or `-10`)."
 )
 
 pct_default = 0.40
-if interval == "Tx9":
+if interval == "Treatment 10":
     pct = st.number_input("Tx9 change (prop or %)", value=pct_default, format="%.3f")
     pct_var = "pct_change_s2"
     bin_key = "Tx9 Binomial"
@@ -222,7 +222,7 @@ gauss_df = pd.DataFrame([{
 st.subheader(f"Response probability @ Tx35 ({interval} model only)")
 st.dataframe(prob_df, use_container_width=True, hide_index=True)
 
-st.subheader(f"Predicted final % improvement @ Tx35 ({interval} model only)")
+st.subheader(f"Predicted final % improvement @ Treatment 36 ({interval} model only)")
 st.dataframe(gauss_df, use_container_width=True, hide_index=True)
 
 # ===== Export =====
@@ -267,6 +267,6 @@ with b:
     )
 
 st.caption(
-    "Each interim has its **own** fitted model; results are **not aggregated**. "
+    "Each milestone has its **own** fitted model; results are **not aggregated**. "
     "CIs use the model variance–covariance matrix (delta method). Binomial CIs are mapped to probability via the inverse logit."
 )
