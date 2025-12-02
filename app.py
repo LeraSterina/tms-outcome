@@ -9,7 +9,7 @@ col1, col2 = st.columns([1,4])
 with col1:
     st.image("logo.png", width=110)
 with col2:
-    st.title("TMS Outcome Predictors (Tx35)")
+    st.title("TMS Outcome Predictors - use change in QIDS scores at treatment milestones (10,20,30) to predict probability of response or percent change in final QIDS score by treatment 36")
     st.caption(
         "This app uses **separate models** for each milestone (Treatment 10/20/30). "
         "Choose a milestone first—your results reflect **only** the inputs for that milestone."
