@@ -176,21 +176,21 @@ st.markdown(
 )
 
 pct_default = 0.40
+
 if interval == "Treatment 10":
     pct = st.number_input("Tx9 change (prop or %)", value=pct_default, format="%.3f")
-    pct_var = "pct_change_s2"
-    bin_key = "Tx9 Binomial"
-    gau_key = "Tx9 Gaussian"
-elif interval == "Tx19":
+    bin_key = "Predicted Probability of Response From Progress at Treatment 10"
+    gau_key = "Predicted Percent Change in QIDS From Progress at Treatment 10"
+
+elif interval == "Treatment 20":
     pct = st.number_input("Tx19 change (prop or %)", value=pct_default, format="%.3f")
-    pct_var = "pct_change_s3"
-    bin_key = "Tx19 Binomial"
-    gau_key = "Tx19 Gaussian"
-else:
+    bin_key = "Predicted Probability of Response From Progress at Treatment 20"
+    gau_key = "Predicted Percent Change in QIDS From Progress at Treatment 20"
+
+else:  # Treatment 30
     pct = st.number_input("Tx29 change (prop or %)", value=pct_default, format="%.3f")
-    pct_var = "pct_change_s4"
-    bin_key = "Tx29 Binomial"
-    gau_key = "Tx29 Gaussian"
+    bin_key = "Predicted Probability of Response From Progress at Treatment 30"
+    gau_key = "Predicted Percent Change in QIDS From Progress at Treatment 30"
 
 # Accept either 0–1 proportion or 0–100 percent
 pct = float(pct)
