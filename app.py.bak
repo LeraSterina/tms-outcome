@@ -15,11 +15,11 @@ with col1:
 
 with col2:
     st.title("TMS Outcome Predictor (Session 36)")
-    st.caption("Enter early responses and demographics to predict the final outcome.")
+    st.caption("Enter early response data and demographics to predict the final outcome.")
 
 with col2:
     st.title("TMS Outcome Predictor (Session 36)")
-    st.caption("Enter early responses and demographics to predict the final outcome.")
+    st.caption("Enter early response data and demographics to predict the final outcome.")
 
 # --- Header: clickable logo + title side-by-side ---
 col1, col2 = st.columns([1, 4])
@@ -36,7 +36,7 @@ with col1:
 
 with col2:
     st.title("TMS Outcome Predictor (Session 36)")
-    st.caption("Enter early responses and demographics to predict the final outcome.")
+    st.caption("Enter early response data and demographics to predict the final outcome.")
 
 import streamlit as st
 # --- Header: clickable logo + title side-by-side ---
@@ -54,7 +54,7 @@ with col1:
 
 with col2:
     st.title("TMS Outcome Predictor (Session 36)")
-    st.caption("Enter early responses and demographics to predict the final outcome.")
+    st.caption("Enter early response data and demographics to predict the final outcome.")
 
 # --- Header: clickable logo + title side-by-side ---
 col1, col2 = st.columns([1, 4])
@@ -71,7 +71,7 @@ with col1:
 
 with col2:
     st.title("TMS Outcome Predictor (Session 36)")
-    st.caption("Enter early responses and demographics to predict the final outcome.")
+    st.caption("Enter early response data and demographics to predict the final outcome.")
 
 import pandas as pd
 import joblib
