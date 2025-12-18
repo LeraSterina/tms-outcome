@@ -11,8 +11,8 @@ with col1:
 with col2:
     st.title("Predict Response to TMS for Depression Using Changes in QIDS at Treatment Milestones")
     st.caption(
-        "This app uses **separate models** for each milestone (treatment 10/20/30) to predict the probability of treatment response and the percent change in QIDS by treatment end."
-        "Choose a milestone first—your results reflect **only** the inputs for that milestone."
+        "This app uses **separate models** for each milestone (treatment 10/20/30) to predict the probability of treatment response and the percent change in QIDS by treatment end." 
+        "Choose a milestone first—your results reflect **only** the inputs for that milestone." 
         "The models were created using data collected from over 1600 patients treated with TMS for depression at McLean Belmont Hospital."
     )
 
