@@ -5,6 +5,23 @@ import math
 st.set_page_config(page_title="TMS Outcome Predictors", page_icon="🧠", layout="centered")
 
 # ===== Header =====
+st.markdown(
+    """
+    <style>
+    /* Reduce title font size */
+    h1 {
+        font-size: 1.8rem !important;
+    }
+
+    /* Enlarge caption font size */
+    .stCaption {
+        font-size: 1.05rem !important;
+        line-height: 1.5;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 col1, col2 = st.columns([1,4])
 with col1:
     st.image("logo.png", width=110)
